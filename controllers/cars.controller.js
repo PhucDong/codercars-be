@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const fs = require("fs");
 const { handleError } = require("../utils/handleError");
 const { handleResponse } = require("../utils/handleResponse");
 const Car = require("../models/Car");
@@ -42,7 +41,10 @@ carsController.createCar = async (req, res, next) => {
       isDeleted: false,
     };
 
-    const addedCar = await Car.create(newCar);
+    const result = await Car.create(newCar);
+    const addedCar = {};
+    addedCar.message = "Create a car successfully!";
+    addedCar.car = result;
 
     handleResponse(res, addedCar);
   } catch (error) {
@@ -97,7 +99,8 @@ carsController.getAllCars = async (req, res, next) => {
       },
       {
         $facet: {
-          metadata: [
+          data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+          otherData: [
             { $count: "totalCars" },
             {
               $addFields: {
@@ -110,7 +113,6 @@ carsController.getAllCars = async (req, res, next) => {
               },
             },
           ],
-          cars: [{ $skip: (page - 1) * limit }, { $limit: limit }],
         },
       },
     ]);
@@ -119,7 +121,14 @@ carsController.getAllCars = async (req, res, next) => {
       throw handleError("Car can't be found.", 404);
     }
 
-    handleResponse(res, foundCarList);
+    const response = {
+      message: "Get cars successfully!",
+      cars: foundCarList[0]?.data,
+      page: page,
+      total: foundCarList[0]?.otherData[0]?.totalPages,
+    };
+
+    handleResponse(res, response);
   } catch (error) {
     next(error);
   }
@@ -140,7 +149,12 @@ carsController.editCar = async (req, res, next) => {
       throw handleError("Car can't be found.", 404);
     }
 
-    handleResponse(res, foundCar);
+    const response = {
+      message: "Update the car successfully!",
+      info: foundCar,
+    };
+
+    handleResponse(res, response);
   } catch (error) {
     next(error);
   }
@@ -150,15 +164,18 @@ carsController.deleteCar = async (req, res, next) => {
   try {
     const { carId } = req.params;
 
-    const foundCar = await Car.find({ _id: ObjectId(carId) });
+    const deletedCar = await Car.findOneAndDelete({ _id: ObjectId(carId) });
 
-    if (!foundCar.length) {
+    if (!deletedCar) {
       throw handleError("Car can't be found.", 404);
     }
 
-    const deletedCar = await Car.findOneAndDelete({ _id: ObjectId(carId) });
+    const response = {
+      message: "Delete the car successfully!",
+      info: deletedCar,
+    };
 
-    handleResponse(res, deletedCar);
+    handleResponse(res, response);
   } catch (error) {
     next(error);
   }
