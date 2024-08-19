@@ -30,6 +30,18 @@ carsController.createCar = async (req, res, next) => {
     const { make, model, release_date, transmission_type, price, size, style } =
       req.body;
 
+    if (
+      !make ||
+      !model ||
+      !release_date ||
+      !transmission_type ||
+      !price ||
+      !size ||
+      !style
+    ) {
+      throw handleError("Missing body information.", 500);
+    }
+
     const newCar = {
       make,
       model,
@@ -74,7 +86,7 @@ carsController.getAllCars = async (req, res, next) => {
 
     filterKeyList.map((key) => {
       if (!allowedQueryList.includes(key)) {
-        throw handleError(`Query ${key} is not allowed`, 401);
+        throw handleError(`Query ${key} is not allowed.`, 401);
       }
 
       if (!filterQueries[key]) delete filterQueries[key];
